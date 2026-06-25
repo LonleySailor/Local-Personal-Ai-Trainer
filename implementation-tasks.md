@@ -29,31 +29,31 @@
 ## Phase 2: Database Layer
 
 ### Task 2.1: Define Drizzle Schema
-- [ ] Create `src/db/schema.ts`
-- [ ] Define table: `users` (id, name, goals, createdAt)
-- [ ] Define table: `equipment` (id, name, category, weight, createdAt)
-- [ ] Define table: `recovery_logs` (id, userId, sleepQuality, mood, injuryNotes, timestamp)
-- [ ] Define table: `workout_sessions` (id, userId, startTime, endTime, notes, createdAt)
-- [ ] Define table: `workout_sets` (id, sessionId, exerciseName, weight, reps, rpe, order, completedAt)
-- [ ] Define table: `ai_memories` (id, userId, memory, createdAt)
+- [x] Create `src/db/schema.ts`
+- [x] Define table: `users` (id, name, goals, createdAt)
+- [x] Define table: `equipment` (id, name, category, weight, createdAt)
+- [x] Define table: `recovery_logs` (id, userId, sleepQuality, mood, injuryNotes, timestamp)
+- [x] Define table: `workout_sessions` (id, userId, startTime, endTime, notes, createdAt)
+- [x] Define table: `workout_sets` (id, sessionId, exerciseName, weight, reps, rpe, order, completedAt)
+- [x] Define table: `ai_memories` (id, userId, memory, createdAt)
 
 ### Task 2.2: Create Database Client
-- [ ] Create `src/db/client.ts`
-- [ ] Export singleton DB client instance using `better-sqlite3`
-- [ ] Export Drizzle ORM instance wrapping the SQLite client
-- [ ] Test client initialization and schema creation
+- [x] Create `src/db/client.ts`
+- [x] Export singleton DB client instance using `better-sqlite3`
+- [x] Export Drizzle ORM instance wrapping the SQLite client
+- [x] Test client initialization and schema creation
 
 ### Task 2.3: Create Seed Script
-- [ ] Create `scripts/seed.ts`
-- [ ] Implement CSV parser for exercises (columns: name, category, equipment)
-- [ ] Implement seed function to populate `users` table with default user
-- [ ] Implement seed function to populate `equipment` table from CSV or hardcoded data
-- [ ] Export CLI command: `npm run seed`
+- [x] Create `scripts/seed.ts`
+- [x] Implement CSV parser for exercises (columns: name, category, equipment)
+- [x] Implement seed function to populate `users` table with default user
+- [x] Implement seed function to populate `equipment` table from CSV or hardcoded data
+- [x] Export CLI command: `npm run seed`
 
 ### Task 2.4: Test Database Setup
-- [ ] Run seed script and verify DB file is created at `data/ai-trainer.db`
-- [ ] Manually inspect DB with SQLite CLI or tool to confirm tables and data
-- [ ] Verify schema matches Drizzle definitions
+- [x] Run seed script and verify DB file is created at `data/ai-trainer.db`
+- [x] Manually inspect DB with SQLite CLI or tool to confirm tables and data
+- [x] Verify schema matches Drizzle definitions
 
 ---
 
