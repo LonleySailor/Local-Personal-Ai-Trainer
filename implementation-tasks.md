@@ -60,22 +60,22 @@
 ## Phase 3: LLM Integration
 
 ### Task 3.1: Configure LM-Studio Provider
-- [ ] Create `lib/llm.ts`
-- [ ] Import Vercel AI SDK components (`generateText`, `streamText`, `tool`)
-- [ ] Create custom provider for LM-Studio using `LM_STUDIO_URL` env var
-- [ ] Export initialized LLM client instance
+- [x] Create `lib/llm.ts`
+- [x] Import Vercel AI SDK components (`generateText`, `streamText`, `tool`)
+- [x] Create custom provider for LM-Studio using `LM_STUDIO_URL` env var
+- [x] Export initialized LLM client instance
 
 ### Task 3.2: Create Test API Route
-- [ ] Create `app/api/test/route.ts`
-- [ ] Implement simple GET endpoint that calls LM-Studio with a test prompt
-- [ ] Return model response as JSON
-- [ ] Test locally: curl or fetch against `/api/test`
+- [x] Create `app/api/test/route.ts`
+- [x] Implement simple GET endpoint that calls LM-Studio with a test prompt
+- [x] Return model response as JSON
+- [x] Test locally: curl or fetch against `/api/test`
 
 ### Task 3.3: Verify LM-Studio Connectivity
-- [ ] Start LM-Studio locally on `localhost:1234`
-- [ ] Load a small GGUF model (e.g., Mistral 7B)
-- [ ] Run Next dev server: `npm run dev`
-- [ ] Call test endpoint and verify response
+- [x] Start LM-Studio locally on `localhost:1234`
+- [x] Load a small GGUF model (e.g., Mistral 7B)
+- [x] Run Next dev server: `npm run dev`
+- [x] Call test endpoint and verify response
 
 ---
 
