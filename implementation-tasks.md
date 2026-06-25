@@ -3,26 +3,26 @@
 ## Phase 1: Project Scaffold & Setup
 
 ### Task 1.1: Initialize Next.js App
-- [ ] Run `npx create-next-app@latest ai-trainer --typescript --tailwind --app`
-- [ ] Verify Next.js app structure is created
-- [ ] Check `package.json` for default dependencies
+- [x] Run `npx create-next-app@latest ai-trainer --typescript --tailwind --app`
+- [x] Verify Next.js app structure is created
+- [x] Check `package.json` for default dependencies
 
 ### Task 1.2: Install Core Dependencies
-- [ ] Install Drizzle ORM: `npm install drizzle-orm better-sqlite3`
-- [ ] Install Vercel AI SDK: `npm install ai @ai-sdk/openai`
-- [ ] Install utilities: `npm install zod dotenv`
-- [ ] Verify all dependencies in `package.json`
+- [x] Install Drizzle ORM: `npm install drizzle-orm better-sqlite3`
+- [x] Install Vercel AI SDK: `npm install ai @ai-sdk/openai`
+- [x] Install utilities: `npm install zod dotenv`
+- [x] Verify all dependencies in `package.json`
 
 ### Task 1.3: Configure TypeScript & Build
-- [ ] Review and update `tsconfig.json` for strict mode
-- [ ] Verify `next.config.ts` exists and is configured
-- [ ] Create `.env.local` template with `LM_STUDIO_URL=http://localhost:1234/v1`
-- [ ] Test build: `npm run build`
+- [x] Review and update `tsconfig.json` for strict mode
+- [x] Verify `next.config.ts` exists and is configured
+- [x] Create `.env.local` template with `LM_STUDIO_URL=http://localhost:1234/v1`
+- [x] Test build: `npm run build`
 
 ### Task 1.4: Project Structure Setup
-- [ ] Create directory structure: `src/db`, `src/lib`, `scripts`, `data`, `app/(components)`, `app/api`
-- [ ] Create `app/layout.tsx` with Tailwind + global styles
-- [ ] Create `app/page.tsx` as entry point (home screen)
+- [x] Create directory structure: `src/db`, `src/lib`, `scripts`, `data`, `app/(components)`, `app/api`
+- [x] Create `app/layout.tsx` with Tailwind + global styles
+- [x] Create `app/page.tsx` as entry point (home screen)
 
 ---
 
