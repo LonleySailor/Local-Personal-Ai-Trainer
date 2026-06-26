@@ -2,7 +2,7 @@
 name: vercel-ai-local-openai-compatible
 description: Integrate a local OpenAI-compatible LLM server (LM-Studio, Ollama, etc.) with the Vercel AI SDK in a Next.js project
 source: auto-skill
-extracted_at: '2026-06-25T16:09:46.021Z'
+extracted_at: '2026-06-25T16:47:33.937Z'
 ---
 
 # Integrate a Local OpenAI-Compatible LLM with Vercel AI SDK
@@ -126,8 +126,55 @@ curl http://localhost:3000/api/test
 
 A reusable `src/lib/llm.ts` plus a test route that confirms local inference works end-to-end.
 
+## Handling Reasoning / "Thinking" Local Models
+
+Some local models (e.g., quantized Gemma/Gemma-3 variants in LM-Studio) emit a separate `reasoning_content` stream before producing ordinary `content`. With short token budgets, the model may consume all allocated tokens on reasoning and return empty `content`.
+
+**Symptom:** `generateText` or your `/api/test` route returns `{ response: "" }`, but the LM-Studio server is reachable and curl works for simple prompts.
+
+**Diagnose with a direct curl:**
+
+```bash
+curl -X POST http://localhost:1234/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"local-model","messages":[{"role":"user","content":"Say hello"}],"max_tokens":50}'
+```
+
+If you see `reasoning_content` with a long chain-of-thought and `content: ""`, you are hitting this behavior.
+
+**Fixes:**
+
+1. **Use `generateObject` for short, structured outputs.** `generateObject` appears to coax the model into producing content inside the JSON object, so it is more reliable than `generateText` for summaries, memory notes, workout outlines, etc.
+
+   ```typescript
+   import { generateObject } from "@/lib/llm";
+
+   const { object } = await generateObject({
+     model: localModel,
+     system: "You are a helpful trainer.",
+     prompt: "Summarise this workout in one sentence.",
+     schema: z.object({ summary: z.string().min(1) }),
+     output: "object",
+     maxOutputTokens: 256,
+   });
+   ```
+
+2. **Always provide a fallback so the app does not store empty strings.**
+
+   ```typescript
+   let memoryText = object.summary.trim();
+   if (!memoryText) {
+     memoryText = `Completed ${sets.length} set(s) over ${durationMinutes} minute(s).`;
+   }
+   ```
+
+3. **Raise `maxOutputTokens`** to leave room after reasoning finishes (e.g., 512–1024 tokens for summary calls).
+
+4. **Avoid treating an empty `generateText` response as a failed API call** if server health and the direct curl look OK.
+
 ## Tips
 
 - Keep the model id as a generic placeholder (e.g., `"local-model"`). Local servers route to whichever GGUF/model they have loaded and generally ignore the request's `model` field.
 - Do not commit `.env.local`; keep only `.env.local.example` in version control.
 - If the local server requires a real API key, swap `apiKey: "not-needed"` for `apiKey: process.env.MY_LOCAL_API_KEY`.
+- If `npm run dev` launches on a different port because an old dev server is still running, kill the old process first; otherwise stale compiled code may mask your latest changes.

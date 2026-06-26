@@ -1,5 +1,5 @@
 import { createOpenAI } from "@ai-sdk/openai";
-import { generateText, streamText, tool } from "ai";
+import { generateObject, generateText, streamText, tool } from "ai";
 
 const LM_STUDIO_URL =
   process.env.LM_STUDIO_URL ?? "http://localhost:1234/v1";
@@ -17,4 +17,4 @@ const lmStudio = createOpenAI({
 // supports. The model id is a placeholder; LM-Studio routes to its loaded model.
 export const lmStudioModel = lmStudio.chat("local-model");
 
-export { generateText, streamText, tool };
+export { generateObject, generateText, streamText, tool };

@@ -82,43 +82,43 @@
 ## Phase 4: Server-Action Tools & API
 
 ### Task 4.1: Implement Tool: `getAvailableEquipment`
-- [ ] Create function in `app/api/ai/tools.ts`
-- [ ] Query `equipment` table via Drizzle
-- [ ] Return formatted list of available equipment
-- [ ] Export as server action or API endpoint
+- [x] Create function in `app/api/ai/tools.ts`
+- [x] Query `equipment` table via Drizzle
+- [x] Return formatted list of available equipment
+- [x] Export as server action or API endpoint
 
 ### Task 4.2: Implement Tool: `buildSystemPrompt`
-- [ ] Create function in `app/api/ai/tools.ts`
-- [ ] Accept userId, recovery data, and equipment list as params
-- [ ] Build compact system prompt for the LLM:
+- [x] Create function in `app/api/ai/tools.ts`
+- [x] Accept userId, recovery data, and equipment list as params
+- [x] Build compact system prompt for the LLM:
   - Include user profile summary
   - List available equipment
   - Include recent recovery log (sleep, mood, injury flags)
   - Include last 3 ai_memories
-- [ ] Return formatted system prompt string
+- [x] Return formatted system prompt string
 
 ### Task 4.3: Implement Tool: `generate_workout_outline`
-- [ ] Create function in `app/api/ai/tools.ts`
-- [ ] Accept userId and check-in data (sleep quality, mood, injury notes)
-- [ ] Call LLM with system prompt + user check-in to generate workout outline
-- [ ] Return structured outline (exercises, sets, reps, weights)
-- [ ] Store outline in temporary session state or return to client
+- [x] Create function in `app/api/ai/tools.ts`
+- [x] Accept userId and check-in data (sleep quality, mood, injury notes)
+- [x] Call LLM with system prompt + user check-in to generate workout outline
+- [x] Return structured outline (exercises, sets, reps, weights)
+- [x] Store outline in temporary session state or return to client
 
 ### Task 4.4: Implement Tool: `log_set`
-- [ ] Create function in `app/api/ai/tools.ts`
-- [ ] Accept sessionId, exerciseName, weight, reps, rpe
-- [ ] Insert into `workout_sets` table via Drizzle
-- [ ] Return confirmation with set order/number
-- [ ] Export as server action for client-side calls
+- [x] Create function in `app/api/ai/tools.ts`
+- [x] Accept sessionId, exerciseName, weight, reps, rpe
+- [x] Insert into `workout_sets` table via Drizzle
+- [x] Return confirmation with set order/number
+- [x] Export as server action for client-side calls
 
 ### Task 4.5: Implement Tool: `finish_workout`
-- [ ] Create function in `app/api/ai/tools.ts`
-- [ ] Accept sessionId and optional user notes
-- [ ] Query `workout_sets` for the session to build workout summary
-- [ ] Call LLM to generate ai_memory based on session data
-- [ ] Insert memory into `ai_memories` table
-- [ ] Update `workout_sessions` endTime and mark complete
-- [ ] Return session summary
+- [x] Create function in `app/api/ai/tools.ts`
+- [x] Accept sessionId and optional user notes
+- [x] Query `workout_sets` for the session to build workout summary
+- [x] Call LLM to generate ai_memory based on session data
+- [x] Insert memory into `ai_memories` table
+- [x] Update `workout_sessions` endTime and mark complete
+- [x] Return session summary
 
 ---
 
