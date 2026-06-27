@@ -10,7 +10,7 @@ import {
 export const dynamic = "force-dynamic";
 
 /**
- * Rerunnable Phase 4 integration test.
+ * Rerunnable integration test for the AI server-action tools.
  *
  * Walks through the full tool chain:
  *   1. Read available equipment
@@ -76,7 +76,7 @@ export async function GET() {
 
     const finished = await finishWorkout({
       sessionId: session.id,
-      notes: "Phase 4 rerunnable test",
+      notes: "AI tools rerunnable test",
     });
 
     return NextResponse.json({
@@ -94,7 +94,7 @@ export async function GET() {
       result: finished,
     });
   } catch (error) {
-    console.error("Phase 4 test failed:", error);
+    console.error("AI tools test failed:", error);
     return NextResponse.json(
       {
         success: false,
