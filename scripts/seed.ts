@@ -43,7 +43,8 @@ sqlite.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     category TEXT NOT NULL,
-    weight REAL,
+    weight TEXT,
+    weight_unit TEXT NOT NULL DEFAULT 'kg',
     created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
   );
 
@@ -104,32 +105,25 @@ if (existingUsers.length === 0) {
 const existingEquipment = db.select().from(equipmentTable).all();
 if (existingEquipment.length === 0) {
   const defaultEquipment = [
-    // Free weights
-    { name: "Dumbbell 5kg", category: "dumbbell", weight: 5 },
-    { name: "Dumbbell 10kg", category: "dumbbell", weight: 10 },
-    { name: "Dumbbell 15kg", category: "dumbbell", weight: 15 },
-    { name: "Dumbbell 20kg", category: "dumbbell", weight: 20 },
-    { name: "Dumbbell 25kg", category: "dumbbell", weight: 25 },
+    // Free weights — static dumbbells as comma-separated list
+    { name: "Dumbbells", category: "dumbbell", weight: "5, 10, 12, 15, 20, 25", weightUnit: "kg" },
     // Barbell
-    { name: "Barbell 20kg", category: "barbell", weight: 20 },
+    { name: "Barbell", category: "barbell", weight: "20", weightUnit: "kg" },
     // Plates
-    { name: "Plate 5kg", category: "plate", weight: 5 },
-    { name: "Plate 10kg", category: "plate", weight: 10 },
-    { name: "Plate 20kg", category: "plate", weight: 20 },
+    { name: "Plates", category: "plate", weight: "5, 10, 20", weightUnit: "kg" },
     // Bench
-    { name: "Flat Bench", category: "bench", weight: null },
-    { name: "Incline Bench", category: "bench", weight: null },
+    { name: "Flat Bench", category: "bench", weight: null, weightUnit: "kg" },
+    { name: "Incline Bench", category: "bench", weight: null, weightUnit: "kg" },
     // Rack
-    { name: "Power Rack", category: "rack", weight: null },
+    { name: "Power Rack", category: "rack", weight: null, weightUnit: "kg" },
     // Bodyweight
-    { name: "Pull-up Bar", category: "bodyweight", weight: null },
+    { name: "Pull-up Bar", category: "bodyweight", weight: null, weightUnit: "kg" },
     // Cables
-    { name: "Cable Machine", category: "cable", weight: null },
+    { name: "Cable Machine", category: "cable", weight: "5-80", weightUnit: "kg" },
     // Accessories
-    { name: "Resistance Bands", category: "accessory", weight: null },
-    { name: "Kettlebell 12kg", category: "kettlebell", weight: 12 },
-    { name: "Kettlebell 16kg", category: "kettlebell", weight: 16 },
-    { name: "Kettlebell 24kg", category: "kettlebell", weight: 24 },
+    { name: "Resistance Bands", category: "accessory", weight: null, weightUnit: "kg" },
+    // Kettlebells
+    { name: "Kettlebells", category: "kettlebell", weight: "12, 16, 24", weightUnit: "kg" },
   ];
 
   db.insert(equipmentTable).values(defaultEquipment).run();
@@ -163,6 +157,7 @@ if (csvPath) {
     const nameIdx = columns.findIndex((c) => c === "name");
     const categoryIdx = columns.findIndex((c) => c === "category");
     const weightIdx = columns.findIndex((c) => c === "weight" || c === "equipment");
+    const weightUnitIdx = columns.findIndex((c) => c === "weight_unit");
 
     if (nameIdx === -1 || categoryIdx === -1) {
       console.error(
@@ -176,12 +171,15 @@ if (csvPath) {
       const values = lines[i].split(",").map((v) => v.trim().replace(/^"|"$/g, ""));
       const name = values[nameIdx];
       const category = values[categoryIdx];
-      const weightVal = weightIdx !== -1 ? parseFloat(values[weightIdx]) : null;
-      const weight = isNaN(weightVal ?? NaN) ? null : weightVal;
+      const weightRaw = weightIdx !== -1 ? values[weightIdx].trim() : "";
+      const weight = weightRaw || null;
+      const unitRaw =
+        weightUnitIdx !== -1 ? (values[weightUnitIdx]?.trim().toLowerCase() ?? "") : "";
+      const weightUnit = unitRaw === "lb" || unitRaw === "lbs" ? "lb" : "kg";
 
       if (!name || !category) continue;
 
-      db.insert(equipmentTable).values({ name, category, weight }).run();
+      db.insert(equipmentTable).values({ name, category, weight, weightUnit }).run();
       imported++;
     }
 

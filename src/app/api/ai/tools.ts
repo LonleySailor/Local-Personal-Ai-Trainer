@@ -51,6 +51,7 @@ export async function getAvailableEquipment() {
     name: item.name,
     category: item.category,
     weight: item.weight,
+    weightUnit: item.weightUnit,
   }));
 }
 
@@ -109,7 +110,10 @@ export async function buildSystemPrompt({
     .limit(3);
 
   const equipmentText = equipmentList
-    .map((e) => `- ${e.name} (${e.category}${e.weight ? `, ${e.weight}kg` : ""})`)
+    .map((e) => {
+      const weightInfo = e.weight ? `, ${e.weight} ${e.weightUnit ?? "kg"}` : "";
+      return `- ${e.name} (${e.category}${weightInfo})`;
+    })
     .join("\n");
 
   const recoveryText = latestRecovery
@@ -222,10 +226,16 @@ Generate a workout outline for me today.`;
 // ─────────────────────────────────────────────────────────────────────────────
 // Helper: create a fresh workout session (used by Phase 5 UI before logging sets)
 // ─────────────────────────────────────────────────────────────────────────────
-export async function createWorkoutSession(userId: number) {
+export async function createWorkoutSession(
+  userId: number,
+  outline?: WorkoutOutline
+) {
   const result = await db
     .insert(workoutSessions)
-    .values({ userId })
+    .values({
+      userId,
+      notes: outline ? JSON.stringify(outline) : null,
+    })
     .returning({ id: workoutSessions.id, startTime: workoutSessions.startTime });
 
   return result[0];

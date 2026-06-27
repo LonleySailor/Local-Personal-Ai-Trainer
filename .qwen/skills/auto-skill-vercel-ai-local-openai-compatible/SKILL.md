@@ -2,7 +2,7 @@
 name: vercel-ai-local-openai-compatible
 description: Integrate a local OpenAI-compatible LLM server (LM-Studio, Ollama, etc.) with the Vercel AI SDK in a Next.js project
 source: auto-skill
-extracted_at: '2026-06-25T16:47:33.937Z'
+extracted_at: '2026-06-26T14:17:02.858Z'
 ---
 
 # Integrate a Local OpenAI-Compatible LLM with Vercel AI SDK
@@ -98,7 +98,7 @@ export async function GET() {
 }
 ```
 
-### 5. Verify
+### 5. Verify and Retest After Changes
 
 Build the project:
 
@@ -112,6 +112,8 @@ Then, with the local server running:
 npm run dev
 curl http://localhost:3000/api/test
 ```
+
+After any change that touches `src/lib/llm.ts`, server actions, or client components that consume the model, rerun your integration test. Stale dev servers can return cached provider state, so kill any existing `next dev` process first and start a fresh server before declaring the fix wrong.
 
 ## Key Pitfalls
 
@@ -168,9 +170,24 @@ If you see `reasoning_content` with a long chain-of-thought and `content: ""`, y
    }
    ```
 
-3. **Raise `maxOutputTokens`** to leave room after reasoning finishes (e.g., 512–1024 tokens for summary calls).
+3. **For structured outputs the model cannot produce inline, generate a schema and persist the JSON in an existing text column** instead of adding a new DB column for the MVP.
 
-4. **Avoid treating an empty `generateText` response as a failed API call** if server health and the direct curl look OK.
+   ```typescript
+   const { object } = await generateObject({
+     model: localModel,
+     schema: workoutOutlineSchema,
+     output: "object",
+   });
+   // Later retrieved by the next step and parsed with JSON.parse(session.notes)
+   await db.insert(workoutSessions).values({
+     userId,
+     notes: JSON.stringify(object),
+   });
+   ```
+
+4. **Raise `maxOutputTokens`** to leave room after reasoning finishes (e.g., 512–1024 tokens for summary calls).
+
+5. **Avoid treating an empty `generateText` response as a failed API call** if server health and the direct curl look OK.
 
 ## Tips
 

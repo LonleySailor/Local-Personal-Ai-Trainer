@@ -125,40 +125,49 @@
 ## Phase 5: Core UI & Check-in
 
 ### Task 5.1: Build Check-in Form Component
-- [ ] Create `app/(components)/CheckInForm.tsx`
-- [ ] Add input fields:
+- [x] Create `app/(components)/CheckInForm.tsx`
+- [x] Add input fields:
   - Sleep quality (1–10 slider)
   - Mood/energy (1–10 slider)
   - Injury flags/notes (text area)
-- [ ] Add form validation (Zod)
-- [ ] Add submit button that triggers workout session start
-- [ ] Style with Tailwind CSS
+- [x] Add form validation (Zod)
+- [x] Add submit button that triggers workout session start
+- [x] Style with Tailwind CSS
 
 ### Task 5.2: Build Exercise Upload Component
-- [ ] Create `app/(components)/ExerciseUpload.tsx`
-- [ ] Implement CSV file picker
-- [ ] Parse CSV (columns: name, category, equipment)
-- [ ] Call seed/import API endpoint to populate `equipment` table
-- [ ] Show success/error feedback
-- [ ] Style with Tailwind CSS
+- [x] Create `app/(components)/ExerciseUpload.tsx`
+- [x] Implement CSV file picker
+- [x] Parse CSV (columns: name, category, equipment)
+- [x] Call seed/import API endpoint to populate `equipment` table
+- [x] Show success/error feedback
+- [x] Style with Tailwind CSS
 
 ### Task 5.3: Build Session Start Page
-- [ ] Create `app/(components)/SessionStart.tsx`
-- [ ] Display pre-session options:
+- [x] Create `app/(components)/SessionStart.tsx`
+- [x] Display pre-session options:
   - Medical conditions / disliked exercises (text input, one-time per session)
   - Check-in form
   - Start workout button
-- [ ] On start, create new `workout_sessions` record
-- [ ] Pass session ID to workout stepper
+- [x] On start, create new `workout_sessions` record
+- [x] Pass session ID to workout stepper
 
 ### Task 5.4: Build Home UI
-- [ ] Update `app/page.tsx`
-- [ ] Display:
+- [x] Update `app/page.tsx`
+- [x] Display:
   - Last workout summary (if any)
   - Quick stats (total workouts, last session date)
   - Button to start new workout
   - Button to upload exercises
-- [ ] Add links to settings/history (placeholder for now)
+- [x] Add links to settings/history (placeholder for now)
+
+### Task 5.5: Build Equipment Manager UI
+- [x] Create `app/(components)/EquipmentManager.tsx`
+- [x] Display current equipment list with category + weight
+- [x] Add delete button for each equipment item
+- [x] Add single-item form (name, category, weight) to create new equipment
+- [x] Show clear CSV example/template in upload area
+- [x] Wire component into `/?view=upload` page
+- [x] Style with Tailwind CSS
 
 ---
 

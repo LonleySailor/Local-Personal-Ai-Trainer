@@ -14,7 +14,8 @@ export const equipment = sqliteTable("equipment", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
   category: text("category").notNull(),
-  weight: real("weight"),
+  weight: text("weight"),
+  weightUnit: text("weight_unit").default("kg").notNull(),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .$defaultFn(() => new Date()),
