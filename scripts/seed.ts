@@ -36,6 +36,12 @@ sqlite.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     goals TEXT,
+    height_cm INTEGER,
+    body_weight_kg REAL,
+    medical_conditions TEXT,
+    disliked_exercises TEXT,
+    strength_benchmarks TEXT,
+    profile_completed_at INTEGER,
     created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
   );
 
@@ -62,6 +68,7 @@ sqlite.exec(`
     user_id INTEGER NOT NULL REFERENCES users(id),
     start_time INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
     end_time INTEGER,
+    time_budget_minutes INTEGER,
     notes TEXT,
     created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
   );
@@ -70,8 +77,10 @@ sqlite.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     session_id INTEGER NOT NULL REFERENCES workout_sessions(id),
     exercise_name TEXT NOT NULL,
+    kind TEXT NOT NULL DEFAULT 'strength',
     weight REAL,
-    reps INTEGER NOT NULL,
+    reps INTEGER,
+    duration_seconds INTEGER,
     rpe INTEGER,
     "order" INTEGER NOT NULL,
     completed_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
