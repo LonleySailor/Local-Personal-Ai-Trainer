@@ -11,7 +11,10 @@ import {
 } from "@/db/schema";
 import { generateObject, generateText, lmStudioModel } from "@/lib/llm";
 import { formatLoggedSet } from "@/lib/workout-format";
+import { DEMO_USER_COOKIE, isDemoMode } from "@/lib/user";
 import { and, count, desc, eq, isNotNull } from "drizzle-orm";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -191,10 +194,56 @@ export async function saveUserProfile(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Demo mode — let a visitor spin up their own isolated profile without touching
+// the shared showcase user (id 1). Guarded by DEMO_MODE; no-ops otherwise.
+// ─────────────────────────────────────────────────────────────────────────────
+export async function createDemoUser() {
+  if (!isDemoMode()) {
+    throw new Error("createDemoUser called while DEMO_MODE is disabled");
+  }
+
+  // autoincrement gives the next id atomically — no manual max+1 race.
+  const [created] = await db
+    .insert(users)
+    .values({ name: "Guest" })
+    .returning({ id: users.id });
+
+  // Friendly name now that we know the id (profile stays incomplete, so the
+  // visitor is routed through /setup for a clean slate).
+  await db
+    .update(users)
+    .set({ name: `Guest ${created.id}` })
+    .where(eq(users.id, created.id));
+
+  const store = await cookies();
+  store.set(DEMO_USER_COOKIE, String(created.id), {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+  });
+
+  redirect("/setup");
+}
+
+export async function resetDemoUser() {
+  if (!isDemoMode()) {
+    throw new Error("resetDemoUser called while DEMO_MODE is disabled");
+  }
+
+  const store = await cookies();
+  store.delete(DEMO_USER_COOKIE);
+
+  redirect("/");
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // 4.1  Get available equipment
 // ─────────────────────────────────────────────────────────────────────────────
-export async function getAvailableEquipment() {
-  const rows = await db.select().from(equipment);
+export async function getAvailableEquipment(userId: number) {
+  const rows = await db
+    .select()
+    .from(equipment)
+    .where(eq(equipment.userId, userId));
   return rows.map((item) => ({
     id: item.id,
     name: item.name,
@@ -317,7 +366,7 @@ export async function buildSystemPrompt({
     throw new Error(`User ${userId} not found`);
   }
 
-  const equipmentList = await getAvailableEquipment();
+  const equipmentList = await getAvailableEquipment(userId);
 
   let latestRecovery = recovery;
   if (!latestRecovery) {

@@ -1,13 +1,13 @@
 import { redirect } from "next/navigation";
 import { getUserProfile } from "@/app/api/ai/tools";
+import { getCurrentUserId } from "@/lib/user";
 import ProfileForm from "../(components)/ProfileForm";
 
 export const dynamic = "force-dynamic";
 
-const USER_ID = 1;
-
 export default async function SetupPage() {
-  const profile = await getUserProfile(USER_ID);
+  const userId = await getCurrentUserId();
+  const profile = await getUserProfile(userId);
 
   // Already set up → no reason to be on the gate; send them home.
   if (profile?.profileCompletedAt) {
@@ -23,7 +23,7 @@ export default async function SetupPage() {
         </p>
       </header>
 
-      <ProfileForm userId={USER_ID} initial={profile} mode="setup" />
+      <ProfileForm userId={userId} initial={profile} mode="setup" />
     </main>
   );
 }

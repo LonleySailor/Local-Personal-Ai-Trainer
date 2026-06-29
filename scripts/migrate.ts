@@ -132,5 +132,36 @@ if (existing.includes("kind")) {
   }
 }
 
+// ── Migration: equipment becomes per-user ────────────────────────────────────
+//
+// Equipment was originally a single shared inventory. Add a `user_id` column and
+// backfill every existing row to the showcase user (id 1) so their gear is
+// preserved. Added nullable (SQLite can't ADD a NOT NULL column to a populated
+// table) then backfilled; the app always supplies user_id on new inserts.
+{
+  const equipmentCols = columns("equipment");
+  if (equipmentCols.includes("user_id")) {
+    console.log("⏭  equipment already has user_id, skipping");
+  } else {
+    console.log("→ Adding user_id to equipment and backfilling to user 1…");
+    const migrate = sqlite.transaction(() => {
+      sqlite.exec(
+        `ALTER TABLE equipment ADD COLUMN user_id INTEGER REFERENCES users(id);`
+      );
+      sqlite.exec(`UPDATE equipment SET user_id = 1 WHERE user_id IS NULL;`);
+    });
+    sqlite.pragma("foreign_keys = OFF");
+    migrate();
+    sqlite.pragma("foreign_keys = ON");
+
+    const rowCount = (
+      sqlite.prepare("SELECT COUNT(*) AS n FROM equipment").get() as {
+        n: number;
+      }
+    ).n;
+    console.log(`✓ equipment.user_id added (${rowCount} row(s) backfilled to user 1)`);
+  }
+}
+
 sqlite.close();
 console.log("\n✅ Migration complete");

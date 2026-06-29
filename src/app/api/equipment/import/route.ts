@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db/client";
 import { equipment } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { getCurrentUserId } from "@/lib/user";
+import { and, eq } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
+    const userId = await getCurrentUserId();
     const formData = await request.formData();
     const file = formData.get("file");
 
@@ -65,11 +67,11 @@ export async function POST(request: Request) {
       const existing = await db
         .select({ id: equipment.id })
         .from(equipment)
-        .where(eq(equipment.name, row.name))
+        .where(and(eq(equipment.userId, userId), eq(equipment.name, row.name)))
         .limit(1);
 
       if (existing.length === 0) {
-        await db.insert(equipment).values(row);
+        await db.insert(equipment).values({ ...row, userId });
         added++;
       }
     }

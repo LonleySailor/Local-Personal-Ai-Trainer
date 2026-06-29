@@ -21,6 +21,9 @@ export const users = sqliteTable("users", {
 
 export const equipment = sqliteTable("equipment", {
   id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id),
   name: text("name").notNull(),
   category: text("category").notNull(),
   weight: text("weight"),

@@ -9,13 +9,12 @@ import { redirect } from "next/navigation";
 import SessionStart from "./(components)/SessionStart";
 import EquipmentManager from "./(components)/EquipmentManager";
 import ProfileForm from "./(components)/ProfileForm";
-import { getUserProfile } from "@/app/api/ai/tools";
+import { createDemoUser, getUserProfile, resetDemoUser } from "@/app/api/ai/tools";
+import { DEFAULT_USER_ID, getCurrentUserId, isDemoMode } from "@/lib/user";
 import { formatLoggedSet } from "@/lib/workout-format";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
-
-const USER_ID = 1;
 
 type HomePageProps = {
   searchParams: Promise<{ view?: string }>;
@@ -24,21 +23,30 @@ type HomePageProps = {
 export default async function Home({ searchParams }: HomePageProps) {
   const { view } = await searchParams;
 
+  const userId = await getCurrentUserId();
+  const demoMode = isDemoMode();
+
   // Hard gate: no profile yet → onboarding before anything else.
-  const profile = await getUserProfile(USER_ID);
+  const profile = await getUserProfile(userId);
   if (!profile?.profileCompletedAt) {
     redirect("/setup");
   }
 
-  const equipmentList = await db.select().from(equipment).orderBy(equipment.name);
+  const equipmentList = await db
+    .select()
+    .from(equipment)
+    .where(eq(equipment.userId, userId))
+    .orderBy(equipment.name);
 
   const [equipmentCount] = await db
     .select({ count: count() })
-    .from(equipment);
+    .from(equipment)
+    .where(eq(equipment.userId, userId));
 
   const totalWorkouts = await db
     .select({ count: count() })
-    .from(workoutSessions);
+    .from(workoutSessions)
+    .where(eq(workoutSessions.userId, userId));
 
   const latestSession = await db
     .select({
@@ -47,6 +55,7 @@ export default async function Home({ searchParams }: HomePageProps) {
       endTime: workoutSessions.endTime,
     })
     .from(workoutSessions)
+    .where(eq(workoutSessions.userId, userId))
     .orderBy(desc(workoutSessions.startTime))
     .limit(1);
 
@@ -70,6 +79,38 @@ export default async function Home({ searchParams }: HomePageProps) {
           Personal, local, privacy-first coaching
         </p>
       </header>
+
+      {demoMode && (
+        <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-300 bg-amber-50 px-5 py-3 text-sm dark:border-amber-900/60 dark:bg-amber-950/40">
+          <p className="text-amber-800 dark:text-amber-200">
+            <span className="font-semibold">Demo user #{userId}</span>
+            {" — "}
+            {userId === DEFAULT_USER_ID
+              ? "shared showcase profile. Create your own to try a private one."
+              : "your data is private to this browser."}
+          </p>
+          <div className="flex gap-2">
+            <form action={createDemoUser}>
+              <button
+                type="submit"
+                className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-amber-500"
+              >
+                Create new user
+              </button>
+            </form>
+            {userId !== DEFAULT_USER_ID && (
+              <form action={resetDemoUser}>
+                <button
+                  type="submit"
+                  className="rounded-lg border border-amber-400 px-4 py-2 text-sm font-medium text-amber-800 transition-colors hover:bg-amber-100 dark:text-amber-200 dark:hover:bg-amber-900/40"
+                >
+                  Back to showcase
+                </button>
+              </form>
+            )}
+          </div>
+        </section>
+      )}
 
       <section className="grid gap-4 sm:grid-cols-3">
         <StatCard label="Equipment items" value={equipmentCount?.count ?? 0} />
@@ -133,11 +174,11 @@ export default async function Home({ searchParams }: HomePageProps) {
       </section>
 
       <section className="flex flex-col items-start gap-6">
-        {view === "start" && <SessionStart userId={USER_ID} />}
+        {view === "start" && <SessionStart userId={userId} />}
         {view === "upload" && <EquipmentManager initialEquipment={equipmentList} />}
-        {view === "history" && <WorkoutHistory />}
+        {view === "history" && <WorkoutHistory userId={userId} />}
         {view === "profile" && (
-          <ProfileForm userId={USER_ID} initial={profile} mode="edit" />
+          <ProfileForm userId={userId} initial={profile} mode="edit" />
         )}
       </section>
     </main>
@@ -153,7 +194,7 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-async function WorkoutHistory() {
+async function WorkoutHistory({ userId }: { userId: number }) {
   const sessions = await db
     .select({
       id: workoutSessions.id,
@@ -162,6 +203,7 @@ async function WorkoutHistory() {
       notes: workoutSessions.notes,
     })
     .from(workoutSessions)
+    .where(eq(workoutSessions.userId, userId))
     .orderBy(desc(workoutSessions.startTime));
 
   if (sessions.length === 0) {

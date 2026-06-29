@@ -47,6 +47,7 @@ sqlite.exec(`
 
   CREATE TABLE IF NOT EXISTS equipment (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id),
     name TEXT NOT NULL,
     category TEXT NOT NULL,
     weight TEXT,
@@ -110,6 +111,10 @@ if (existingUsers.length === 0) {
   console.log("⏭  User already exists, skipping");
 }
 
+// Default equipment belongs to the first (showcase) user.
+const [defaultUser] = db.select().from(users).orderBy(users.id).limit(1).all();
+const defaultUserId = defaultUser.id;
+
 // ── Seed default equipment ──────────────────────────────────────
 const existingEquipment = db.select().from(equipmentTable).all();
 if (existingEquipment.length === 0) {
@@ -135,7 +140,9 @@ if (existingEquipment.length === 0) {
     { name: "Kettlebells", category: "kettlebell", weight: "12, 16, 24", weightUnit: "kg" },
   ];
 
-  db.insert(equipmentTable).values(defaultEquipment).run();
+  db.insert(equipmentTable)
+    .values(defaultEquipment.map((e) => ({ ...e, userId: defaultUserId })))
+    .run();
   console.log(`✓ ${defaultEquipment.length} equipment items seeded`);
 } else {
   console.log("⏭  Equipment already exists, skipping");
@@ -188,7 +195,9 @@ if (csvPath) {
 
       if (!name || !category) continue;
 
-      db.insert(equipmentTable).values({ name, category, weight, weightUnit }).run();
+      db.insert(equipmentTable)
+        .values({ userId: defaultUserId, name, category, weight, weightUnit })
+        .run();
       imported++;
     }
 

@@ -26,7 +26,7 @@ export async function GET() {
   try {
     const userId = 1;
 
-    const equipment = await getAvailableEquipment();
+    const equipment = await getAvailableEquipment(userId);
 
     // Disliked exercises and long-term medical conditions now live on the user
     // profile; only short-term/session inputs are passed here.

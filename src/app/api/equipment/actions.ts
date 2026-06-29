@@ -2,7 +2,8 @@
 
 import { db } from "@/db/client";
 import { equipment } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { getCurrentUserId } from "@/lib/user";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
 const WEIGHT_PATTERN = /^(\d+(\.\d+)?)(\s*[-,]\s*\d+(\.\d+)?)*$/;
@@ -50,10 +51,12 @@ export async function addEquipment(formData: FormData) {
   }
 
   try {
+    const userId = await getCurrentUserId();
+
     const existing = await db
       .select({ id: equipment.id })
       .from(equipment)
-      .where(eq(equipment.name, name))
+      .where(and(eq(equipment.userId, userId), eq(equipment.name, name)))
       .limit(1);
 
     if (existing.length > 0) {
@@ -61,6 +64,7 @@ export async function addEquipment(formData: FormData) {
     }
 
     await db.insert(equipment).values({
+      userId,
       name,
       category,
       weight: validatedWeight,
@@ -78,7 +82,11 @@ export async function addEquipment(formData: FormData) {
 
 export async function deleteEquipment(id: number) {
   try {
-    await db.delete(equipment).where(eq(equipment.id, id));
+    const userId = await getCurrentUserId();
+    // Scope by user so a visitor can only delete their own equipment.
+    await db
+      .delete(equipment)
+      .where(and(eq(equipment.id, id), eq(equipment.userId, userId)));
     return { success: true };
   } catch (error) {
     return {
@@ -89,5 +97,10 @@ export async function deleteEquipment(id: number) {
 }
 
 export async function getEquipment() {
-  return db.select().from(equipment).orderBy(equipment.name);
+  const userId = await getCurrentUserId();
+  return db
+    .select()
+    .from(equipment)
+    .where(eq(equipment.userId, userId))
+    .orderBy(equipment.name);
 }
