@@ -5,11 +5,17 @@ import {
   workoutSets,
 } from "@/db/schema";
 import { count, desc, eq, sql } from "drizzle-orm";
+import { redirect } from "next/navigation";
 import SessionStart from "./(components)/SessionStart";
 import EquipmentManager from "./(components)/EquipmentManager";
+import ProfileForm from "./(components)/ProfileForm";
+import { getUserProfile } from "@/app/api/ai/tools";
+import { formatLoggedSet } from "@/lib/workout-format";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
+
+const USER_ID = 1;
 
 type HomePageProps = {
   searchParams: Promise<{ view?: string }>;
@@ -17,6 +23,12 @@ type HomePageProps = {
 
 export default async function Home({ searchParams }: HomePageProps) {
   const { view } = await searchParams;
+
+  // Hard gate: no profile yet → onboarding before anything else.
+  const profile = await getUserProfile(USER_ID);
+  if (!profile?.profileCompletedAt) {
+    redirect("/setup");
+  }
 
   const equipmentList = await db.select().from(equipment).orderBy(equipment.name);
 
@@ -112,12 +124,21 @@ export default async function Home({ searchParams }: HomePageProps) {
         >
           Show previous workouts
         </Link>
+        <Link
+          href="/?view=profile"
+          className="rounded-lg border border-zinc-300 bg-white px-5 py-3 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
+        >
+          Profile / settings
+        </Link>
       </section>
 
       <section className="flex flex-col items-start gap-6">
-        {view === "start" && <SessionStart userId={1} />}
+        {view === "start" && <SessionStart userId={USER_ID} />}
         {view === "upload" && <EquipmentManager initialEquipment={equipmentList} />}
         {view === "history" && <WorkoutHistory />}
+        {view === "profile" && (
+          <ProfileForm userId={USER_ID} initial={profile} mode="edit" />
+        )}
       </section>
     </main>
   );
@@ -159,8 +180,10 @@ async function WorkoutHistory() {
       const sets = await db
         .select({
           exerciseName: workoutSets.exerciseName,
+          kind: workoutSets.kind,
           weight: workoutSets.weight,
           reps: workoutSets.reps,
+          durationSeconds: workoutSets.durationSeconds,
           rpe: workoutSets.rpe,
           order: workoutSets.order,
         })
@@ -253,11 +276,7 @@ async function WorkoutHistory() {
                       <span className="text-zinc-700 dark:text-zinc-300">
                         {set.order}. {set.exerciseName}
                       </span>
-                      <span className="text-zinc-500">
-                        {set.reps} reps
-                        {set.weight ? ` • ${set.weight}kg` : ""}
-                        {set.rpe ? ` • RPE ${set.rpe}` : ""}
-                      </span>
+                      <span className="text-zinc-500">{formatLoggedSet(set)}</span>
                     </li>
                   ))}
                 </ul>

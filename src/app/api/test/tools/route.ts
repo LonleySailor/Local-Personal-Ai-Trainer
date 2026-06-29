@@ -28,14 +28,15 @@ export async function GET() {
 
     const equipment = await getAvailableEquipment();
 
+    // Disliked exercises and long-term medical conditions now live on the user
+    // profile; only short-term/session inputs are passed here.
     const outline = await generateWorkoutOutline({
       userId,
       sleepQuality: 7,
       mood: 8,
       injuryNotes: "mild shoulder tightness",
-      dislikedExercises: ["burpees", "box jumps"],
-      medicalConditions: ["history of lower back strain"],
       shortTermInjury: "left knee niggle",
+      timeAvailableMinutes: 60,
     });
 
     if (!outline.exercises.length) {

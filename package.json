@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "seed": "tsx scripts/seed.ts",
+    "migrate": "tsx scripts/migrate.ts",
+    "flush": "tsx scripts/flush.ts",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
