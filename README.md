@@ -1,20 +1,44 @@
 # AI Personal Trainer
 
-A local, privacy-first AI fitness coach. A Next.js app orchestrates a **local** LLM through [LM-Studio](https://lmstudio.ai/) to generate and guide your workouts. All durable state — your equipment inventory, recovery logs, workout history, and AI-generated memories — lives in a local SQLite database rather than in the model's context window, so the whole thing runs comfortably within an ~8GB VRAM budget and never sends your data to the cloud.
+A Personal AI Trainer built to run locally first (LM Studio support only for now), to use the hardware people already have, without paying for cloud models. The goal is to fit the model + data into 8 GB of VRAM and produce results quickly enough while still keeping them decent and, most of all, of usable quality.
 
-> **Status:** Single-user MVP. There is no auth — `userId` is hardcoded to `1`. The app is offline-only (LM-Studio is the sole inference provider) and the interface is a text-based, step-by-step guided workout flow.
+<p align="center">
+  <a href="https://ai-trainer.lunatria.com"><strong>▶ Try the live demo →</strong></a>
+</p>
+
+<p align="center">
+  <img src="image-1.png" alt="A generated workout shown in the AI Personal Trainer UI" width="600">
+</p>
+
+> **Heads up:** The project is local-first — the app runs entirely on your own machine through LM Studio. The hosted demo above runs the same app against [OpenRouter](https://openrouter.ai/) (a cloud model) instead, so you can try it without installing anything.
+
+> **Status:** First version of creating workouts. Supports timers, profiles and equipment lists.
+
+> **Current Problems:** AI is inconsistent with weight + repetition range, and doesn't take previous workouts into account well enough.
+
+
+
+## Why I built this
+
+Honestly I decided to build this because I am a cheapskate and lazy. I don't want to pay someone or something (either with money or my data) for what a local AI model can already do if it's prompted correctly. There are many guides on the internet to generate a "general" workout plan with the help of AI (They are quite good and I am using one currently), but they lack flexibility, and let's be honest, asking AI each time to modify it because of time constraints, bad recovery, is tiring, and why not reduce the friction! As I train at home, having a computer close to me isn't a problem. Hell even if you go to the gym you can connect to the trainer via a VPN (like Tailscale), and leave the computer running during your trip to use it without having a domain or a server.
+
+## Features
+
+- 🏋️ **Equipment-aware** — plans use only the gear you actually own
+- 😴 **Recovery-aware** — a quick check-in (sleep, energy, time available) shapes each session
+- ⏱️ **Guided sets** — step through the workout one set at a time, with rest timers between them
+- 👤 **Profiles & equipment lists** — set up once, reused for every workout
+- 🔒 **Local & private** — runs on your own hardware; your data stays in local SQLite
 
 ## How it works
 
-Pre-workout check-in form → the backend builds a compact system prompt from the database (profile, equipment, latest recovery log, last few AI memories) → LM-Studio generates a structured workout outline → you log sets one at a time → the session closes with an AI-generated memory note saved back to the database for next time.
-
-The app never replays full conversation history to the model — context is reassembled from the DB on each call to stay within the VRAM budget.
+Pre-workout check-in gives info about sleep, energy and time available. Profiles and equipment lists are prepared beforehand by the user; the AI receives that information and returns a workout with sets, rest time between sets, and details. The app never replays full conversation history to the model — context is reassembled from the DB on each call to stay within the 8 GB VRAM budget.
 
 ## Prerequisites
 
 - **Node.js 20+** (developed against Node 26)
 - **[LM-Studio](https://lmstudio.ai/)** installed
-- A **GGUF model** to load in LM-Studio. This project was tested with `google/gemma-4-e4b`. 
+- An **LLM model** to load in LM-Studio. This project was tested with `google/gemma-4-e4b`; feel free to use other models, though that may result in different experiences.
 
 ## Setup & run
 
@@ -45,11 +69,8 @@ npm run dev
 
 Then open **http://localhost:3000**.
 
-### Optional: seed equipment from a CSV
 
-```bash
-npm run seed <file.csv>   # columns: name, category, weight, weight_unit
-```
+
 
 ## Available scripts
 
