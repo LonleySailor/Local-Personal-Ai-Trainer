@@ -173,92 +173,176 @@
 
 ## Phase 6: Guided Workout Flow
 
-### Task 6.1: Build Workout Stepper Component
-- [ ] Create `app/(components)/WorkoutStepper.tsx`
-- [ ] Display:
-  - Full workout outline at the top (collapsed/expandable)
-  - Current exercise name, target weight/reps
-  - Input fields for actual weight, reps, RPE (1–10)
-  - "Set complete" button
-  - Progress indicator (e.g., 3/10 sets done)
-- [ ] On "Set complete", call `log_set` server action
-- [ ] Move to next exercise; repeat
+> Re-planned after manual testing: exercises now carry a `kind` so warm-ups and
+> timed work aren't forced into weight/reps fields, and the AI prescribes
+> concrete loads from auto-derived training history. See
+> `plan-localPersonalAiTrainer.md` and the plan note for full context.
 
-### Task 6.2: Build Workout Session Page
-- [ ] Create `app/workout/[sessionId]/page.tsx`
-- [ ] Load session from DB
-- [ ] Display `SessionStart` if session not yet started
-- [ ] Display `WorkoutStepper` once started
-- [ ] Add "End Workout Early" button
-- [ ] Show "Workout Complete" summary screen on finish
+### Task 6.1: Exercise kinds in the data model
+- [x] Add `kind` ("strength" | "bodyweight" | "timed" | "mobility"),
+  `durationSeconds`, and make `reps` nullable on `workout_sets` (`src/db/schema.ts`)
+- [x] Update `CREATE TABLE workout_sets` for fresh installs (`scripts/seed.ts`)
+- [x] Add idempotent, data-preserving migration `scripts/migrate.ts` +
+  `npm run migrate` (rebuilds `workout_sets`, guarded on the `kind` column)
 
-### Task 6.3: Implement Finish Workout Flow
-- [ ] On last set completion or "End Workout" click, call `finish_workout`
-- [ ] Display final summary:
-  - Total sets/exercises completed
-  - Session duration
-  - AI-generated memory note
-- [ ] Add button to return home or start another session
+### Task 6.2: AI load prescription from history
+- [x] Add `getExerciseHistory(userId)` — recent bests + estimated 1RM (Epley)
+  from completed sessions (`src/app/api/ai/tools.ts`)
+- [x] Add a "Recent performance" section to `buildSystemPrompt`
+- [x] Update `generateWorkoutOutline` prompt: classify each exercise with a
+  `kind`, prescribe concrete strength loads, use `durationSeconds` for timed,
+  leave mobility unloaded
+- [x] Extend `outlineExerciseSchema` with `kind`/`durationSeconds`, optional
+  reps/weight/rpe
+
+### Task 6.3: Adaptive Workout Stepper
+- [x] Create `app/(components)/WorkoutStepper.tsx`
+- [x] Display: collapsible plan, progress indicator, per-kind target line,
+  kind badge
+- [x] Render inputs per kind: strength (weight+reps+RPE), bodyweight (reps+RPE),
+  timed (duration), mobility ("Mark done", no numbers)
+- [x] Kind-aware validation; on complete, call `log_set` with the right fields
+- [x] Shared `src/lib/workout-format.ts` for target/logged-set formatting
+
+### Task 6.4: Workout Session Page
+- [x] Create `app/workout/[sessionId]/page.tsx`
+- [x] Load session + outline (from session notes JSON) and logged sets
+- [x] Resume in-progress sessions; render kind-aware completed recap
+- [x] "End Workout Early" button; "Workout Complete" summary on finish
+
+### Task 6.5: Finish Workout Flow
+- [x] On last step or "End early", call `finish_workout`
+- [x] `finish_workout` summarises sets per kind for the AI memory
+- [x] Final summary: total sets, duration, AI memory note; return home / restart
+- [x] Update recap (`workout/[sessionId]`) and history (`page.tsx`) to render
+  per kind (reps vs duration vs "done")
 
 ---
 
-## Phase 7: Session State & Safety
+## Phase 7: User Profile & Setup Gate
 
-### Task 7.1: Store Disliked Exercises & Medical Conditions
-- [ ] Extend `SessionStart` to accept:
-  - Disliked exercises (comma-separated text)
-  - Long-term medical conditions (text)
-  - Short-term health issues (text)
-- [ ] Store in session state or temp DB table (session_metadata)
-- [ ] Pass to LLM system prompt to enforce safety rules
+> Re-planned after manual testing: long-term facts (medical conditions, disliked
+> exercises, goals, body weight, height, strength benchmarks) were being re-typed
+> every session. They now live on a persistent **user profile** captured once via
+> a hard onboarding gate, and are reused for every workout. See the plan note for
+> full context.
 
-### Task 7.2: Enforce Safety Rules in Tool
-- [ ] Update `generate_workout_outline` to check disliked exercises & medical flags
-- [ ] Implement logic to exclude banned exercises from outline
-- [ ] Enforce RPE caps if needed (e.g., skip if injury noted)
-- [ ] Return validation errors if outline violates rules
+### Task 7.1: Extend the data model with profile fields
+- [x] Add `heightCm`, `bodyWeightKg`, `medicalConditions`, `dislikedExercises`,
+  `strengthBenchmarks`, `profileCompletedAt` to `users` (`src/db/schema.ts`)
+- [x] Mirror columns in the `CREATE TABLE users` raw SQL (`scripts/seed.ts`)
+- [x] Add idempotent, column-guarded `ALTER TABLE users ADD COLUMN …` block to
+  `scripts/migrate.ts` (nullable additions — no table rebuild)
+
+### Task 7.2: Profile server actions
+- [x] `getUserProfile(userId)` — returns profile fields + `profileCompletedAt`
+- [x] `saveUserProfile(userId, …)` — Zod-validated; sets `profileCompletedAt`
+  (`src/app/api/ai/tools.ts`)
+
+### Task 7.3: Profile UI
+- [x] `ProfileForm.tsx` — name, goals, body weight, height, strength benchmarks
+  (free text), medical conditions, disliked exercises; `mode` "setup" | "edit"
+- [x] `src/app/setup/page.tsx` — standalone onboarding route
+
+### Task 7.4: Hard gate + edit path
+- [x] Redirect `/` → `/setup` when `profileCompletedAt` is null (`page.tsx`)
+- [x] `?view=profile` branch renders `ProfileForm` in edit mode + nav link
 
 ---
 
-## Phase 8: Acceptance & Manual Testing
+## Phase 8: Time-Budgeted, Profile-Driven Generation
 
-### Task 8.1: Write Manual Test Plan
+> The session form no longer collects long-term safety fields (now from profile),
+> and the user states how much time they have **today** so the AI can size the
+> workout. The old "Safety Rules" enforcement is folded in here: profile medical
+> conditions + disliked exercises are always present in the system prompt.
+
+### Task 8.1: Source safety/profile data from the profile
+- [x] Drop `medicalConditions` / `dislikedExercises` params from
+  `buildSystemPrompt` / `generateWorkoutOutline`; read them from the user row
+- [x] Add profile fields (body weight, height, strength benchmarks) to the
+  "User profile" section of the system prompt
+- [x] Remove the medical/disliked inputs from `SessionStart` (keep short-term
+  injury); update the test route (`api/test/tools`)
+
+### Task 8.2: Per-session time budget
+- [x] Add "Time available today (minutes)" input to `SessionStart`
+- [x] Thread `timeAvailableMinutes` through `generateWorkoutOutline` →
+  `buildSystemPrompt`
+- [x] Add `timeBudgetMinutes` column to `workout_sessions` (schema + seed +
+  migrate) and persist it via `createWorkoutSession`
+
+### Task 8.3: Prompt fits the budget and prescribes rest
+- [x] "Time budget" prompt section instructs the model to size exercises/sets to
+  fit, counting rest
+- [x] Strengthen `restSeconds` schema description + instruction so strength/
+  bodyweight exercises always carry a realistic rest value
+
+---
+
+## Phase 9: Rest Timer in the Stepper
+
+> `restSeconds` was carried in the outline but only shown as static text. The
+> stepper now runs an actual rest countdown between sets.
+
+### Task 9.1: Rest countdown phase
+- [x] Add a `"resting"` phase to `WorkoutStepper`'s state machine
+- [x] After logging a set, if a next set exists and `restSeconds > 0`, enter
+  `"resting"` instead of going straight to the next entry
+- [x] `RestTimer` component: MM:SS countdown + next-set preview (`formatTarget`)
+
+### Task 9.2: Auto-advance and skip
+- [x] Auto-advance to the next set at 0:00; "Skip timer" jumps immediately
+- [x] No rest screen after the final set (goes straight to the finish panel)
+
+---
+
+## Phase 10: Acceptance & Manual Testing
+
+> Requires LM-Studio running with a model loaded.
+
+### Task 10.1: Write Manual Test Plan
 - [ ] Document test scenario:
-  1. Start app, upload exercises (CSV) if needed
-  2. Click "Start Workout"
-  3. Fill in session metadata (medical conditions, disliked exercises)
-  4. Fill in check-in (sleep, mood, injury notes)
-  5. Trigger workout generation
-  6. Verify outline appears in LLM response
+  1. Fresh DB → loading `/` redirects to `/setup`; complete the profile
+  2. Start app, upload exercises (CSV) if needed
+  3. Click "Start Workout"
+  4. Enter **time available today** + any short-term injury
+  5. Fill in check-in (sleep, mood, injury notes)
+  6. Trigger workout generation; verify the outline fits the time budget and
+     carries `restSeconds`
   7. Complete 2–3 sets manually (enter weight, reps, RPE)
-  8. Verify `workout_sets` entries in DB
-  9. End workout
-  10. Verify `ai_memories` entry created
-  11. Verify offline operation (no cloud API calls)
+  8. Verify the **rest countdown** appears between sets and "Skip timer" works
+  9. Verify `workout_sets` entries in DB
+  10. End workout; verify `ai_memories` entry created
+  11. Edit the profile via `?view=profile`; confirm changes reach the next prompt
+  12. Verify offline operation (no cloud API calls)
 
-### Task 8.2: Run Manual Test Scenario
+### Task 10.2: Run Manual Test Scenario
 - [ ] Start LM-Studio locally with a model loaded
-- [ ] Run `npm run dev`
+- [ ] Run `npm run migrate` (existing DBs) then `npm run dev`
 - [ ] Execute test scenario
 - [ ] Verify DB state at each step
 - [ ] Document any issues or unexpected behavior
 
-### Task 8.3: Validate Data Persistence
+### Task 10.3: Validate Data Persistence
 - [ ] Restart app without losing data
-- [ ] Verify workout history remains in `workout_sessions`
+- [ ] Verify profile + workout history persist
 - [ ] Verify equipment list persists across sessions
 - [ ] Verify ai_memories are available for next session
 
 ---
 
-## Phase 9: Documentation & Environment
+## Phase 11: Documentation & Environment
 
-### Task 9.1: Create README
+### Task 11.1: Create README
 - [ ] Document project overview and tech stack
 - [ ] Add LM-Studio setup instructions:
   - Download and install LM-Studio
   - Load a GGUF model (recommend Mistral 7B for 8GB VRAM)
   - Start server on `localhost:1234`
+- [ ] Document the first-run `/setup` profile flow
+- [ ] Note that existing databases must run `npm run migrate` after pulling the
+  profile/time-budget schema changes
 - [ ] Add `.env.local` template and variable descriptions
 - [ ] Add quick start commands:
   ```bash
@@ -267,35 +351,37 @@
   npm run dev
   ```
 
-### Task 9.2: Create .env.local Template
+### Task 11.2: Create .env.local Template
 - [ ] Create `.env.local.example`
 - [ ] Define variables:
   - `LM_STUDIO_URL=http://localhost:1234/v1`
   - `DATABASE_PATH=./data/ai-trainer.db`
 - [ ] Add comments explaining each variable
 
-### Task 9.3: Add Scripts to package.json
+### Task 11.3: Add Scripts to package.json
 - [ ] Add `seed` script pointing to `scripts/seed.ts`
+- [ ] Add `migrate` script pointing to `scripts/migrate.ts`
 - [ ] Add `dev` script for Next.js dev server
 - [ ] Add `build` and `start` scripts
 - [ ] Optional: add `lint` and `test` scripts for future use
 
 ---
 
-## Phase 10: Final Integration & Polish
+## Phase 12: Final Integration & Polish
 
-### Task 10.1: End-to-End Test
-- [ ] Run full scenario: upload → check-in → generate → log sets → finish
+### Task 12.1: End-to-End Test
+- [ ] Run full scenario: setup profile → start (time budget) → check-in →
+  generate → log sets (with rest timer) → finish
 - [ ] Verify all data flows correctly through API
 - [ ] Check for any console errors or warnings
 - [ ] Verify UI is responsive and user-friendly
 
-### Task 10.2: Offline Verification
+### Task 12.2: Offline Verification
 - [ ] Disconnect from network (or block external requests)
 - [ ] Verify app still works with LM-Studio locally
 - [ ] Confirm no external API calls are made (check network tab)
 
-### Task 10.3: Prepare for Review
+### Task 12.3: Prepare for Review
 - [ ] Clean up temporary code or logs
 - [ ] Add comments to complex functions
 - [ ] Verify `.gitignore` excludes `data/`, `node_modules/`, `.env.local`

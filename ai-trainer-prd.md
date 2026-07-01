@@ -70,6 +70,7 @@ The After-MVP phase extends the MVP with mobility, workflow flexibility, and clo
 3. **Voice input:** Use the Web Speech API or Whisper for hands-free logging.
 4. **Alternative workflow:** Add a mode where the AI gives the whole workout at once and the user submits feedback at the end.
 5. **Cloud LLM switch:** Add a UI toggle for local LM-Studio versus cloud providers through the same AI SDK abstraction.
+6. **Mid-session exercise substitution/introduction (to be planned):** During set logging the AI may suggest or introduce an exercise that wasn't in the original generated outline (e.g. a swap when a machine is busy, or because an exercise feels wrong on the day). Today the stepper only walks the fixed outline, so there is no supported path for this. Needs design before implementation — see Stage 3 below.
 
 ### 3.4 After-MVP Roadmap Details
 
@@ -82,6 +83,11 @@ The After-MVP phase extends the MVP with mobility, workflow flexibility, and clo
 
 #### Stage 3: Training Flow Options
 *   Support both guided step-by-step coaching and full-workout delivery with end-of-session feedback.
+*   **Mid-session exercise substitution/introduction (to be planned).** Allow the live workout to deviate from the generated outline when the AI introduces or swaps an exercise mid-session. Open design questions:
+    *   How the user requests a swap/addition (UI affordance in the stepper), and how the request reaches the model with only compact context.
+    *   How a newly introduced exercise is validated against available equipment, long-term medical conditions, and disliked exercises (the same safety rules used at generation time).
+    *   How the new exercise is inserted into the live, flattened step list (ordering, set count, `kind`, targets) and persisted so history/recovery and resume still work.
+    *   Whether the stored outline JSON in `workout_sessions.notes` is rewritten or the deviation is tracked separately.
 
 #### Stage 4: LLM Scaling
 *   Support OpenAI, Anthropic, OpenRouter, and Google through environment-based provider switching.
