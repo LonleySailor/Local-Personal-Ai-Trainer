@@ -81,6 +81,23 @@ const workoutOutlineSchema = z.object({
 
 export type WorkoutOutline = z.infer<typeof workoutOutlineSchema>;
 
+// Generation-time variant of the outline schema with a leading "reasoning"
+// scratch field. Under grammar-constrained decoding a reasoning model has no
+// free-text outlet, so it tends to "think" inside string values — sometimes
+// emitting its hidden thought token mid-JSON, which breaks parsing. Giving it
+// a sanctioned place to think first makes generation far more reliable (and
+// the plans noticeably better). The field is stripped before the outline is
+// returned or stored.
+const workoutOutlineGenSchema = z.object({
+  reasoning: z
+    .string()
+    .describe(
+      "Think here first, briefly (2-4 sentences): recovery state, safety rules, time budget, and which exercises/loads fit. This is scratch space and is never shown to the user."
+    ),
+  exercises: workoutOutlineSchema.shape.exercises,
+  sessionNotes: workoutOutlineSchema.shape.sessionNotes,
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Server-side safety net for the model output. The schema keeps reps/weight
 // optional so timed/mobility stay valid, which means the LLM is free to omit a
@@ -501,16 +518,30 @@ export async function generateWorkoutOutline({
 
 Generate a workout outline for me today.`;
 
-  const { object } = await generateObject({
-    model: lmStudioModel,
-    system: systemPrompt,
-    prompt: userMessage,
-    schema: workoutOutlineSchema,
-    output: "object",
-    maxOutputTokens: 1024*8,
-  });
+  const generate = () =>
+    generateObject({
+      model: lmStudioModel,
+      system: systemPrompt,
+      prompt: userMessage,
+      schema: workoutOutlineGenSchema,
+      output: "object",
+      maxOutputTokens: 1024 * 8,
+    });
 
-  return normalizeOutline(object);
+  let object: z.infer<typeof workoutOutlineGenSchema>;
+  try {
+    ({ object } = await generate());
+  } catch {
+    // Local models occasionally emit output the SDK can't parse; one retry
+    // resolves the vast majority of those.
+    ({ object } = await generate());
+  }
+
+  // Drop the reasoning scratch field — only the plan itself is kept.
+  return normalizeOutline({
+    exercises: object.exercises,
+    sessionNotes: object.sessionNotes,
+  });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -593,6 +624,13 @@ export async function logSet({
 // 4.5  Finish a workout and generate an AI memory
 // ─────────────────────────────────────────────────────────────────────────────
 const memorySchema = z.object({
+  // Leading scratch field for the same reason as workoutOutlineGenSchema:
+  // reasoning models behave much better with a sanctioned place to think.
+  reasoning: z
+    .string()
+    .describe(
+      "Think here briefly before writing the note. Scratch space — never stored."
+    ),
   memory: z
     .string()
     .min(1)
