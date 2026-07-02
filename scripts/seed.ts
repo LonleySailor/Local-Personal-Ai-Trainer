@@ -159,7 +159,6 @@ if (csvPath) {
     console.log("⏭  CSV file is empty (no data rows)");
   } else {
     const header = lines[0].toLowerCase();
-    const expectedColumns = ["name", "category", "equipment"];
 
     // Check if header matches expected columns
     const columns = header.split(",").map((c) => c.trim().replace(/^"|"$/g, ""));

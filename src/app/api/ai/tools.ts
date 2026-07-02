@@ -206,7 +206,10 @@ export async function getAvailableEquipment() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Recent performance — derive per-exercise bests from logged history so the LLM
-// can prescribe concrete loads. Estimated 1RM uses the Epley formula.
+// can prescribe concrete loads. Estimated 1RM uses the Epley formula
+// (weight × (1 + reps/30)). Only sets from *completed* sessions count, and the
+// result is capped to the `limit` most recently trained exercises so the
+// "Recent performance" prompt section stays small.
 // ─────────────────────────────────────────────────────────────────────────────
 export type ExercisePerformance = {
   exerciseName: string;
@@ -294,6 +297,13 @@ function formatPerformance(p: ExercisePerformance): string {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 4.2  Build a compact system prompt from DB state
+//
+// The app never sends conversation history to the LLM. Every generation call
+// reconstructs its context fresh from SQLite: user profile (incl. medical
+// conditions + disliked exercises), equipment list, today's check-in, the last
+// 3 AI memories, and recent per-exercise performance. This keeps the prompt
+// small enough for 7B–13B models on an 8GB VRAM budget while still giving the
+// model everything it needs to program a safe, personalized session.
 // ─────────────────────────────────────────────────────────────────────────────
 export type RecoverySummary = {
   sleepQuality: number;
@@ -642,7 +652,9 @@ Write a concise 1-2 sentence memory note summarising what happened and what to r
       prompt: memoryPrompt,
       schema: memorySchema,
       output: "object",
-      maxOutputTokens: 256,
+      // Generous cap: reasoning models spend output tokens on hidden
+      // reasoning before the visible note, so 256 can truncate to nothing.
+      maxOutputTokens: 2048*2,
     });
     memoryText = object.memory.trim();
   } catch {
@@ -651,7 +663,7 @@ Write a concise 1-2 sentence memory note summarising what happened and what to r
     const { text } = await generateText({
       model: lmStudioModel,
       prompt: memoryPrompt,
-      maxOutputTokens: 256,
+      maxOutputTokens: 2048*2,
     });
     memoryText = text.trim();
   }

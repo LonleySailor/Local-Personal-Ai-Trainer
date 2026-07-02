@@ -6,7 +6,9 @@ export async function GET() {
     const { text } = await generateText({
       model: lmStudioModel,
       prompt: "Say hello and confirm you are running locally.",
-      maxOutputTokens: 128,
+      // Reasoning models spend output tokens on hidden reasoning first;
+      // a small cap can truncate before any visible text is emitted.
+      maxOutputTokens: 1024*8,
     });
 
     return NextResponse.json({ success: true, response: text });
