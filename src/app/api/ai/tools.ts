@@ -81,6 +81,23 @@ const workoutOutlineSchema = z.object({
 
 export type WorkoutOutline = z.infer<typeof workoutOutlineSchema>;
 
+// Generation-time variant of the outline schema with a leading "reasoning"
+// scratch field. Under grammar-constrained decoding a reasoning model has no
+// free-text outlet, so it tends to "think" inside string values — sometimes
+// emitting its hidden thought token mid-JSON, which breaks parsing. Giving it
+// a sanctioned place to think first makes generation far more reliable (and
+// the plans noticeably better). The field is stripped before the outline is
+// returned or stored.
+const workoutOutlineGenSchema = z.object({
+  reasoning: z
+    .string()
+    .describe(
+      "Think here first, briefly (2-4 sentences): recovery state, safety rules, time budget, and which exercises/loads fit. This is scratch space and is never shown to the user."
+    ),
+  exercises: workoutOutlineSchema.shape.exercises,
+  sessionNotes: workoutOutlineSchema.shape.sessionNotes,
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Server-side safety net for the model output. The schema keeps reps/weight
 // optional so timed/mobility stay valid, which means the LLM is free to omit a
@@ -206,7 +223,10 @@ export async function getAvailableEquipment() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Recent performance — derive per-exercise bests from logged history so the LLM
-// can prescribe concrete loads. Estimated 1RM uses the Epley formula.
+// can prescribe concrete loads. Estimated 1RM uses the Epley formula
+// (weight × (1 + reps/30)). Only sets from *completed* sessions count, and the
+// result is capped to the `limit` most recently trained exercises so the
+// "Recent performance" prompt section stays small.
 // ─────────────────────────────────────────────────────────────────────────────
 export type ExercisePerformance = {
   exerciseName: string;
@@ -294,6 +314,13 @@ function formatPerformance(p: ExercisePerformance): string {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 4.2  Build a compact system prompt from DB state
+//
+// The app never sends conversation history to the LLM. Every generation call
+// reconstructs its context fresh from SQLite: user profile (incl. medical
+// conditions + disliked exercises), equipment list, today's check-in, the last
+// 3 AI memories, and recent per-exercise performance. This keeps the prompt
+// small enough for 7B–13B models on an 8GB VRAM budget while still giving the
+// model everything it needs to program a safe, personalized session.
 // ─────────────────────────────────────────────────────────────────────────────
 export type RecoverySummary = {
   sleepQuality: number;
@@ -491,16 +518,30 @@ export async function generateWorkoutOutline({
 
 Generate a workout outline for me today.`;
 
-  const { object } = await generateObject({
-    model: lmStudioModel,
-    system: systemPrompt,
-    prompt: userMessage,
-    schema: workoutOutlineSchema,
-    output: "object",
-    maxOutputTokens: 1024*8,
-  });
+  const generate = () =>
+    generateObject({
+      model: lmStudioModel,
+      system: systemPrompt,
+      prompt: userMessage,
+      schema: workoutOutlineGenSchema,
+      output: "object",
+      maxOutputTokens: 1024 * 8,
+    });
 
-  return normalizeOutline(object);
+  let object: z.infer<typeof workoutOutlineGenSchema>;
+  try {
+    ({ object } = await generate());
+  } catch {
+    // Local models occasionally emit output the SDK can't parse; one retry
+    // resolves the vast majority of those.
+    ({ object } = await generate());
+  }
+
+  // Drop the reasoning scratch field — only the plan itself is kept.
+  return normalizeOutline({
+    exercises: object.exercises,
+    sessionNotes: object.sessionNotes,
+  });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -583,6 +624,13 @@ export async function logSet({
 // 4.5  Finish a workout and generate an AI memory
 // ─────────────────────────────────────────────────────────────────────────────
 const memorySchema = z.object({
+  // Leading scratch field for the same reason as workoutOutlineGenSchema:
+  // reasoning models behave much better with a sanctioned place to think.
+  reasoning: z
+    .string()
+    .describe(
+      "Think here briefly before writing the note. Scratch space — never stored."
+    ),
   memory: z
     .string()
     .min(1)
@@ -642,7 +690,9 @@ Write a concise 1-2 sentence memory note summarising what happened and what to r
       prompt: memoryPrompt,
       schema: memorySchema,
       output: "object",
-      maxOutputTokens: 256,
+      // Generous cap: reasoning models spend output tokens on hidden
+      // reasoning before the visible note, so 256 can truncate to nothing.
+      maxOutputTokens: 2048*2,
     });
     memoryText = object.memory.trim();
   } catch {
@@ -651,7 +701,7 @@ Write a concise 1-2 sentence memory note summarising what happened and what to r
     const { text } = await generateText({
       model: lmStudioModel,
       prompt: memoryPrompt,
-      maxOutputTokens: 256,
+      maxOutputTokens: 2048*2,
     });
     memoryText = text.trim();
   }
