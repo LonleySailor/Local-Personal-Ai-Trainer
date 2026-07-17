@@ -49,8 +49,8 @@ npm install
 # 2. Create your local env file (defaults work out of the box)
 cp .env.local.example .env.local
 
-# 3. Initialize the database (creates tables + seeds the default user/equipment)
-npm run seed
+# 3. Initialize the database (creates tables + seeds the default user/equipment) 
+npm run seed  #if you get sqlite related errors try running "npm rebuild better-sqlite3" and see if that resolve's the issue
 ```
 
 **4. Start LM-Studio:**
