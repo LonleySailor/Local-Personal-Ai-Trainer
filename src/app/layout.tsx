@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "./(components)/ThemeProvider";
 import ThemeToggle from "./(components)/ThemeToggle";
@@ -19,18 +20,23 @@ export const metadata: Metadata = {
   description: "Local, privacy-first AI personal trainer",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const cookieTheme = cookieStore.get("theme")?.value;
+  const theme = cookieTheme === "dark" ? "dark" : "light";
+
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased ${theme}`}
+      style={{ colorScheme: theme }}
     >
       <body className="min-h-full flex flex-col">
-        <ThemeProvider>
+        <ThemeProvider defaultTheme={theme}>
           <div className="fixed right-4 top-4 z-50">
             <ThemeToggle />
           </div>
