@@ -35,9 +35,7 @@ export default async function WorkoutPage({ params }: WorkoutPageProps) {
     .where(eq(workoutSets.sessionId, sessionId))
     .orderBy(workoutSets.order);
 
-  // The generated outline is stashed as JSON in the session's notes column when
-  // the session is created. Once the session is finished, notes may be replaced
-  // by the user's free-text note, so parsing is best-effort.
+
   let outline: WorkoutOutline | null = null;
   if (session.notes && session.notes.startsWith("{")) {
     try {
@@ -47,7 +45,6 @@ export default async function WorkoutPage({ params }: WorkoutPageProps) {
     }
   }
 
-  // Already finished → static recap of what was logged.
   if (session.endTime) {
     return (
       <CompletedRecap

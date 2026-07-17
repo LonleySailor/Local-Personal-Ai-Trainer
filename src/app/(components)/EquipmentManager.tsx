@@ -69,7 +69,6 @@ export default function EquipmentManager({
 
   return (
     <div className="grid w-full max-w-5xl gap-6 lg:grid-cols-2">
-      {/* Left column: Add form + CSV upload + CSV format */}
       <div className="flex flex-col gap-6">
         <form
           onSubmit={handleAdd}
@@ -117,22 +116,20 @@ export default function EquipmentManager({
                 <button
                   type="button"
                   onClick={() => setWeightUnit("kg")}
-                  className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
-                    weightUnit === "kg"
+                  className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${weightUnit === "kg"
                       ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
                       : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300"
-                  }`}
+                    }`}
                 >
                   kg
                 </button>
                 <button
                   type="button"
                   onClick={() => setWeightUnit("lb")}
-                  className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
-                    weightUnit === "lb"
+                  className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${weightUnit === "lb"
                       ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
                       : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300"
-                  }`}
+                    }`}
                 >
                   lb
                 </button>
@@ -153,9 +150,8 @@ export default function EquipmentManager({
 
           {formStatus.type !== "idle" && formStatus.message && (
             <p
-              className={`mt-4 text-sm ${
-                formStatus.type === "error" ? "text-red-600" : "text-green-600"
-              }`}
+              className={`mt-4 text-sm ${formStatus.type === "error" ? "text-red-600" : "text-green-600"
+                }`}
             >
               {formStatus.message}
             </p>

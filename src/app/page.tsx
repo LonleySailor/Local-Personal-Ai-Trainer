@@ -52,94 +52,100 @@ export default async function Home({ searchParams }: HomePageProps) {
 
   const latestStats = latestSession[0]
     ? await db
-        .select({
-          setCount: count(workoutSets.id),
-          exercises: sql<string>`GROUP_CONCAT(DISTINCT ${workoutSets.exerciseName})`,
-        })
-        .from(workoutSets)
-        .where(eq(workoutSets.sessionId, latestSession[0].id))
+      .select({
+        setCount: count(workoutSets.id),
+        exercises: sql<string>`GROUP_CONCAT(DISTINCT ${workoutSets.exerciseName})`,
+      })
+      .from(workoutSets)
+      .where(eq(workoutSets.sessionId, latestSession[0].id))
     : [{ setCount: 0, exercises: "" }];
 
   const lastSessionDate = latestSession[0]?.startTime.toLocaleDateString();
 
   return (
     <main className="flex min-h-full flex-col gap-8 px-6 py-12">
-      <header>
+      <header className="text-center">
         <h1 className="text-3xl font-bold tracking-tight">AI Trainer</h1>
         <p className="text-zinc-600 dark:text-zinc-400">
           Personal, local, privacy-first coaching
         </p>
       </header>
 
-      <section className="grid gap-4 sm:grid-cols-3">
+      <section className="grid gap-4 sm:grid-cols-4">
         <StatCard label="Equipment items" value={equipmentCount?.count ?? 0} />
         <StatCard label="Workouts completed" value={totalWorkouts[0]?.count ?? 0} />
         <StatCard label="Last workout" value={lastSessionDate ?? "—"} />
-      </section>
-
-      {latestSession[0] && (
-        <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-          <h2 className="text-lg font-semibold">Latest workout</h2>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-            {latestSession[0].endTime ? "Finished" : "In progress"} on{" "}
-            {lastSessionDate}
-          </p>
-          {latestStats[0].exercises && (
-            <p className="mt-2 text-sm text-zinc-700 dark:text-zinc-300">
-              Exercises: {latestStats[0].exercises}
+        {latestSession[0] && (
+          <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+            <h2 className="text-lg font-semibold">Latest workout</h2>
+            <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+              {latestSession[0].endTime ? "Finished" : "In progress"} on{" "}
+              {lastSessionDate}
             </p>
-          )}
-          {latestStats[0].setCount > 0 && (
-            <p className="text-sm text-zinc-500">
-              {latestStats[0].setCount} set(s) logged
-            </p>
-          )}
-          {latestSession[0] && !latestSession[0].endTime && (
-            <Link
-              href={`/workout/${latestSession[0].id}`}
-              className="mt-4 inline-block rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
-            >
-              Continue workout
-            </Link>
-          )}
-        </section>
-      )}
-
-      <section className="flex flex-wrap gap-3">
-        <Link
-          href="/?view=start"
-          className="rounded-lg bg-zinc-900 px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-zinc-800"
-        >
-          Start new workout
-        </Link>
-        <Link
-          href="/?view=upload"
-          className="rounded-lg border border-zinc-300 bg-white px-5 py-3 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
-        >
-          Upload equipment
-        </Link>
-        <Link
-          href="/?view=history"
-          className="rounded-lg border border-zinc-300 bg-white px-5 py-3 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
-        >
-          Show previous workouts
-        </Link>
-        <Link
-          href="/?view=profile"
-          className="rounded-lg border border-zinc-300 bg-white px-5 py-3 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
-        >
-          Profile / settings
-        </Link>
-      </section>
-
-      <section className="flex flex-col items-start gap-6">
-        {view === "start" && <SessionStart userId={USER_ID} />}
-        {view === "upload" && <EquipmentManager initialEquipment={equipmentList} />}
-        {view === "history" && <WorkoutHistory />}
-        {view === "profile" && (
-          <ProfileForm userId={USER_ID} initial={profile} mode="edit" />
+            {latestStats[0].exercises && (
+              <p className="mt-2 text-sm text-zinc-700 dark:text-zinc-300">
+                Exercises: {latestStats[0].exercises}
+              </p>
+            )}
+            {latestStats[0].setCount > 0 && (
+              <p className="text-sm text-zinc-500">
+                {latestStats[0].setCount} set(s) logged
+              </p>
+            )}
+            {latestSession[0] && !latestSession[0].endTime && (
+              <Link
+                href={`/workout/${latestSession[0].id}`}
+                className="mt-4 inline-block rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+              >
+                Continue workout
+              </Link>
+            )}
+          </section>
         )}
       </section>
+
+
+
+      <section className="flex flex-col md:flex-row" >
+        <div className="flex flex-col gap-5 md:w-1/3">
+          <Link
+            href="/?view=start"
+            className="block w-3xs rounded-lg border border-zinc-300 font-large h-15 text-center px-5 py-4"
+          >
+            Start new workout
+          </Link>
+          <Link
+            href="/?view=upload"
+            className="block w-3xs rounded-lg border border-zinc-300 font-large h-15 text-center px-5 py-4"
+          >
+            Upload equipment
+          </Link>
+          <Link
+            href="/?view=history"
+            className="block w-3xs rounded-lg border border-zinc-300 font-large h-15 text-center px-5 py-4"
+          >
+            Show previous workouts
+          </Link>
+          <Link
+            href="/?view=profile"
+            className="block w-3xs rounded-lg border border-zinc-300 font-large h-15 text-center px-5 py-4"
+          >
+            Profile / settings
+          </Link>
+        </div>
+        <div className="">
+          {view === "start" && <SessionStart userId={USER_ID} />}
+          {view === "upload" && <EquipmentManager initialEquipment={equipmentList} />}
+          {view === "history" && <WorkoutHistory />}
+          {view === "profile" && (
+            <ProfileForm userId={USER_ID} initial={profile} mode="edit" />
+          )}
+        </div>
+      </section>
+
+      {/* Content column (the thing that opens) */}
+
+
     </main>
   );
 }
@@ -195,8 +201,8 @@ async function WorkoutHistory() {
       const durationMinutes =
         session.startTime && session.endTime
           ? Math.round(
-              (session.endTime.getTime() - session.startTime.getTime()) / 60000
-            )
+            (session.endTime.getTime() - session.startTime.getTime()) / 60000
+          )
           : null;
 
       return {
